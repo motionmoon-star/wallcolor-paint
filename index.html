@@ -1132,6 +1132,8 @@ header {
 .tbtn.active { background: rgba(124,108,255,.3); border-color: var(--accent); }
 #leftPanel .slider-box { flex-direction: column; align-items: stretch; gap: 6px; width: 100%; padding: 8px 12px; }
 #leftPanel .slider-box label { display: flex; justify-content: space-between; }
+.settings-strip { display: flex; flex-direction: column; gap: 10px; }
+.settings-strip .slider-box { width: 100%; }
 #leftPanel input[type=range], #leftPanel select { width: 100%; }
 #centerPanel { min-width: 0; }
 .frame {
@@ -1299,14 +1301,13 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
       <button class="tbtn" id="clearEditsBtn" title="Supprimer toutes les retouches manuelles"><span class="ico">♻️</span>Effacer retouches</button>
       <button class="tbtn" id="maskBtn" title="Afficher le masque détecté"><span class="ico">👁</span>Masque</button>
     </div>
-    <div class="slider-box" id="brushBox" style="display:none">
-      <label>Taille du pinceau</label>
-      <input type="range" id="brushSize" min="6" max="120" value="34">
-      <span id="brushSizeVal">34</span>
-    </div>
-
-    <div class="ptitle">Rendu</div>
-    <div class="render-row">
+    <div class="ptitle">Réglages <span class="count">&amp; affinage</span></div>
+    <div class="settings-strip">
+      <div class="slider-box" id="brushBox" style="display:none">
+        <label>Taille du pinceau</label>
+        <input type="range" id="brushSize" min="6" max="120" value="34">
+        <span id="brushSizeVal">34</span>
+      </div>
       <div class="slider-box">
         <label>Qualité IA</label>
         <select id="quality">
@@ -1319,20 +1320,17 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
         <label>Intensité <span id="strengthVal">90%</span></label>
         <input type="range" id="strength" min="0.3" max="1" step="0.05" value="0.9">
       </div>
-    </div>
 
-    <div id="refinePanel" style="display:none">
-      <div class="ptitle">Affiner le masque</div>
-      <div class="refine-row">
+      <div id="refinePanel" style="display:none">
         <div class="slider-box"><label>Lissage <span id="rSmoothV">0</span></label><input type="range" id="rSmooth" min="0" max="100" value="0"></div>
         <div class="slider-box"><label>Contour <span id="rFeatherV">0</span></label><input type="range" id="rFeather" min="0" max="100" value="0"></div>
         <div class="slider-box"><label>Contraste <span id="rContrastV">0</span></label><input type="range" id="rContrast" min="0" max="100" value="0"></div>
         <div class="slider-box"><label>Décalage <span id="rShiftV">0</span></label><input type="range" id="rShift" min="-100" max="100" value="0"></div>
+        <button class="tbtn" id="refineResetBtn"><span class="ico">♻️</span>Réinitialiser l'affinage</button>
       </div>
-      <button class="tbtn" id="refineResetBtn"><span class="ico">♻️</span>Réinitialiser l'affinage</button>
-    </div>
 
-    <button class="btn" id="downloadBtn">⬇️ Télécharger le résultat</button>
+      <button class="btn" id="downloadBtn">⬇️ Télécharger le résultat</button>
+    </div>
   </aside>
 
   <main id="centerPanel">
@@ -1368,12 +1366,12 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
     <button class="btn" id="camSnap">📸 Capturer</button>
   </div>
 </div>
-    <div id="colorName">Aucune couleur sélectionnée</div>
   </main>
 
   <aside id="rightPanel">
     <img id="satinLogo" src="logo-satin-deco.png" alt="BLANLUX SATIN DECO">
     <div class="ptitle">Nuancier Satinée Color <span class="count">42 teintes</span></div>
+    <div id="colorName">Aucune couleur sélectionnée</div>
     <div id="palette"></div>
   </aside>
 </div>
