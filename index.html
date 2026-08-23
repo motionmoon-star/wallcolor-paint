@@ -191,7 +191,7 @@ function handleFile(file) {
     setBA(50);
     $('refinePanel').style.display = 'block';
     dropzone.style.display = 'none';
-    $('app').style.display = 'grid';
+    frame.hidden = false;
     runSegmentation();
   };
   img.src = URL.createObjectURL(file);
@@ -216,7 +216,7 @@ dropzone.addEventListener('drop', e => {
 
 resetBtn.addEventListener('click', () => {
   dropzone.style.display = 'flex';
-  $('app').style.display = 'none';
+  frame.hidden = true;
   baseImageData = coloredImageData = null; wallMask = null; selectedColor = null;
   alphaAll = null; regionMap = null; regionSizes = null; wallSelection = null;
   aiAlpha = null; editDelta = null; editRefine = null; undoStack.length = 0; guideCache = null;
@@ -258,6 +258,10 @@ baBar.addEventListener('pointermove', e => { if (baDragging) baFromEvent(e); });
 baBar.addEventListener('pointerup', () => baDragging = false);
 baBar.addEventListener('pointercancel', () => baDragging = false);
 setBA(50);
+
+// Page unique : l'espace de travail est visible dès l'arrivée,
+// avec le chargeur de photo intégré au centre.
+$('app').style.display = 'grid';
 
 // ---- Sélection du mur au clic : ne peindre qu'un seul mur ----
 canvas.addEventListener('click', e => {
@@ -967,6 +971,8 @@ header {
   display: flex; flex-direction: column; align-items: center; gap: 16px;
   cursor: pointer; transition: .25s; background: var(--card); backdrop-filter: blur(12px);
 }
+/* Intégrée au panneau central de l'espace de travail */
+#centerPanel #dropzone { width: 100%; max-width: none; min-height: 440px; justify-content: center; margin: 0; }
 #dropzone.drag, #dropzone:hover { border-color: var(--accent2); background: rgba(56,198,255,.06); transform: translateY(-2px); }
 #dropzone .big { font-size: 3.2rem; }
 #dropzone p { color: var(--muted); }
@@ -1128,15 +1134,6 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
   <p class="sub">Photographiez ou uploadez votre pièce — l'IA détecte les murs et applique la teinte SATIN DECO choisie, sans toucher aux meubles ni à la décoration.</p>
 </header>
 
-<div id="dropzone">
-  <div class="big">📸</div>
-  <p><strong>Glissez une photo ici</strong> ou choisissez :</p>
-  <div class="btns">
-    <button class="btn" onclick="document.getElementById('cameraInput').click()">📷 Prendre une photo</button>
-    <button class="btn ghost" onclick="document.getElementById('fileInput').click()">📁 Uploader une image</button>
-    <button class="btn ghost" id="demoBtn">🖼 Photo d'exemple</button>
-  </div>
-</div>
 <input type="file" id="fileInput" accept="image/*" hidden>
 <input type="file" id="cameraInput" accept="image/*" capture="environment" hidden>
 
@@ -1186,7 +1183,16 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
   </aside>
 
   <main id="centerPanel">
-    <div class="frame">
+    <div id="dropzone">
+      <div class="big">📸</div>
+      <p><strong>Glissez une photo ici</strong> ou choisissez :</p>
+      <div class="btns">
+        <button class="btn" onclick="document.getElementById('cameraInput').click()">📷 Prendre une photo</button>
+        <button class="btn ghost" onclick="document.getElementById('fileInput').click()">📁 Uploader une image</button>
+        <button class="btn ghost" id="demoBtn">🖼 Photo d'exemple</button>
+      </div>
+    </div>
+    <div class="frame" hidden>
       <div id="canvasBox">
         <canvas id="canvas"></canvas>
         <div id="brushCursor"></div>
