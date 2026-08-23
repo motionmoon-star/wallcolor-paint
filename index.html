@@ -186,7 +186,7 @@ function handleFile(file) {
 }
 
 function loadFromImage(img) {
-  const maxW = 1280;
+  const maxW = isMobile ? 960 : 1280; // photo plus légère sur mobile (moins de RAM)
   const scale = Math.min(1, maxW / img.width);
   canvas.width = Math.round(img.width * scale);
   canvas.height = Math.round(img.height * scale);
@@ -214,6 +214,44 @@ $('demoBtn').addEventListener('click', async () => {
     if (!resp.ok) throw new Error('photo exemple introuvable');
     handleFile(await resp.blob());
   } catch (e) { setStatus('❌ ' + e.message, 'err'); }
+});
+
+// ---- Appareil photo intégré à la page (anti-fermeture mobile) ----
+// Le flux caméra s'affiche dans l'application : aucune bascule vers une
+// autre app, donc le système ne peut pas fermer la page par manque de RAM.
+let camStream = null;
+async function openCamera() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1920 }, height: { ideal: 1440 }
+      },
+      audio: false
+    });
+    $('camVideo').srcObject = camStream;
+    $('camModal').hidden = false;
+  } catch (e) {
+    // caméra indisponible (permission refusée ou connexion non sécurisée) :
+    // repli sur le sélecteur de fichier classique
+    cameraInput.click();
+  }
+}
+function closeCamera() {
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  $('camModal').hidden = true;
+}
+$('takePhotoBtn').addEventListener('click', openCamera);
+$('camCancel').addEventListener('click', closeCamera);
+$('camSnap').addEventListener('click', () => {
+  const v = $('camVideo');
+  if (!v.videoWidth) return;
+  const c = document.createElement('canvas');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  const img = new Image();
+  img.onload = () => { closeCamera(); loadFromImage(img); };
+  img.src = c.toDataURL('image/jpeg', 0.92);
 });
 
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
@@ -568,6 +606,9 @@ async function runSegmentation() {
       if (idx >= 0) paletteEl.children[idx].click();
     }
     persistState();
+    // Sur mobile : libère le modèle IA après chaque analyse (moins de RAM
+    // conservée, l'appareil photo intégré ne fait plus fermer la page)
+    if (isMobile) { segmenters[quality] = null; }
   } catch (err) {
     console.error(err);
     setStatus('❌ Erreur IA : ' + err.message, 'err');
@@ -942,6 +983,18 @@ header {
   filter: drop-shadow(0 4px 12px rgba(0,0,0,.45));
 }
 .sub { max-width: 680px; margin: 12px auto 0; }
+
+/* ---- Appareil photo intégré ---- */
+#camModal {
+  position: fixed; inset: 0; z-index: 100; background: rgba(5,8,14,.94);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; backdrop-filter: blur(6px);
+}
+#camVideo {
+  max-width: 94vw; max-height: 74vh; border-radius: 18px;
+  background: #000; box-shadow: 0 20px 60px rgba(0,0,0,.7);
+}
+.cam-bar { display: flex; gap: 14px; }
 @media (max-width: 640px) {
   #blanluxLogo { height: 32px; }
   #wcLogo { height: 36px; }
@@ -1230,7 +1283,7 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
       <div class="big">📸</div>
       <p><strong>Glissez une photo ici</strong> ou choisissez :</p>
       <div class="btns">
-        <button class="btn" onclick="document.getElementById('cameraInput').click()">📷 Prendre une photo</button>
+        <button class="btn" id="takePhotoBtn">📷 Prendre une photo</button>
         <button class="btn ghost" onclick="document.getElementById('fileInput').click()">📁 Uploader une image</button>
         <button class="btn ghost" id="demoBtn">🖼 Photo d'exemple</button>
       </div>
@@ -1248,6 +1301,16 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
       </div>
     </div>
     <div class="status" id="status"></div>
+
+<!-- Appareil photo intégré : le flux s'affiche DANS la page (pas de bascule
+     vers une autre app, donc pas de fermeture par le système) -->
+<div id="camModal" hidden>
+  <video id="camVideo" autoplay playsinline muted></video>
+  <div class="cam-bar">
+    <button class="btn ghost" id="camCancel">✕ Annuler</button>
+    <button class="btn" id="camSnap">📸 Capturer</button>
+  </div>
+</div>
     <div id="colorName">Aucune couleur sélectionnée</div>
   </main>
 
