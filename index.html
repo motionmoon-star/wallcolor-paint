@@ -133,7 +133,9 @@ const MODEL_LABELS = { b0: 'Rapide', b2: 'Précise', b3: 'Maximale' };
 const MODEL_FALLBACK = { b3: 'b2', b2: 'b0', b0: null };
 
 $('quality').addEventListener('change', e => {
+  const oldQ = quality;
   quality = e.target.value;
+  if (isMobile && oldQ !== quality) disposeSegmenter(oldQ);
   if (baseImageData) runSegmentation();
 });
 
@@ -572,7 +574,10 @@ function stamp(cx, cy, r, mode) {
 }
 
 // ---- Segmentation IA (murs uniquement) ----
+let segmenting = false;
 async function runSegmentation() {
+  if (segmenting) return; // une seule analyse à la fois
+  segmenting = true;
   try {
     if (!segmenters[quality]) {
       setStatus(quality === 'b2'
@@ -607,12 +612,23 @@ async function runSegmentation() {
       if (idx >= 0) paletteEl.children[idx].click();
     }
     persistState();
-    // Sur mobile : libère le modèle IA après chaque analyse (moins de RAM
-    // conservée, l'appareil photo intégré ne fait plus fermer la page)
-    if (isMobile) { segmenters[quality] = null; }
+    // Sur mobile : détruit proprement le modèle IA après chaque analyse
+    // (sinon la 2e photo empile deux moteurs en mémoire et fait planter)
+    if (isMobile) disposeSegmenter(quality);
   } catch (err) {
     console.error(err);
     setStatus('❌ Erreur IA : ' + err.message, 'err');
+  } finally {
+    segmenting = false;
+  }
+}
+
+// Détruit le moteur IA et libère sa mémoire WASM
+function disposeSegmenter(q) {
+  const s = segmenters[q];
+  if (s) {
+    try { if (typeof s.dispose === 'function') s.dispose(); } catch (e) {}
+    segmenters[q] = null;
   }
 }
 
