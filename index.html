@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>WallColor Paint — BLANLUX SATIN DECO</title>
 <script type="module">
 import { pipeline, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0';
@@ -1146,6 +1146,7 @@ header {
 #canvas {
   display: block; width: auto; height: auto;
   max-width: 100%; max-height: calc(100vh - 240px);
+  max-height: calc(100dvh - 240px); /* hauteur réelle sur mobile (barre Safari) */
 }
 
 /* ---- Curseur Avant / Après ---- */
@@ -1263,6 +1264,21 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
   .swatch-item .sq { width: 34px; height: 34px; }
   .swatch-item .nm { font-size: .78rem; }
   #downloadBtn { width: 100%; }
+
+  /* Adaptation générale téléphone : marges compactes, pas de débordement,
+     photo calée sur la hauteur visible réelle (barre d'adresse Safari) */
+  body { padding: 10px 8px 40px; overflow-x: hidden; }
+  header { margin-bottom: 10px; }
+  #bannerRow { gap: 10px; margin: 8px auto 2px; width: 100%; }
+  .banner { font-size: .72rem; }
+  .sub { font-size: .8rem; margin-top: 8px; }
+  #canvas { max-height: calc(100dvh - 330px); }
+  .frame { padding: 5px; border-radius: 14px; }
+  #centerPanel #dropzone { min-height: 280px; padding: 26px 12px; }
+  #leftPanel, #rightPanel { padding: 8px 9px; border-radius: 14px; gap: 8px; }
+  /* évite le zoom automatique iOS quand on touche un curseur/sélecteur */
+  select, input[type=range] { font-size: 16px; }
+  .tbtn { min-width: 74px; padding: 7px 4px; }
 }@media (max-width: 560px) {
   .logo { font-size: 1.3rem; }
   .toolgrid { grid-template-columns: repeat(2, 1fr); }
