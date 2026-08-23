@@ -878,6 +878,10 @@ header {
 }
 
 /* Logos dans la ligne du titre WallColor Paint */
+.logo #wcLogo {
+  height: 62px; width: auto; vertical-align: middle;
+  filter: drop-shadow(0 4px 14px rgba(0,0,0,.55));
+}
 .logo #blanluxLogo, .logo #satinLogo {
   height: 58px; width: auto; vertical-align: middle;
   filter: drop-shadow(0 4px 12px rgba(0,0,0,.5));
@@ -887,6 +891,7 @@ header {
 .sub { max-width: 680px; margin: 12px auto 0; }
 @media (max-width: 640px) {
   .logo #blanluxLogo, .logo #satinLogo { height: 38px; }
+  .logo #wcLogo { height: 40px; }
   .logo .logo-anim { margin-right: 10px; }
   .logo #satinLogo { margin-left: 10px; }
   #bgWatermark { height: 220px; }
@@ -1107,7 +1112,7 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
 <header>
   <div class="logo">
     <span class="logo-anim"><img id="blanluxLogo" src="logo-blanlux.png" alt="BLANLUX"></span>
-    <span class="icon">🏠</span>WallColor <span class="badge">Paint</span>
+    <img id="wcLogo" src="logo-wallcolor.png" alt="WallColor Paint">
     <img id="satinLogo" src="logo-satin-deco.png" alt="BLANLUX SATIN DECO">
   </div>
   <div id="bannerWrap">
