@@ -68,7 +68,11 @@ const refine = { smooth: 0, feather: 0, contrast: 0, shift: 0 };
 let tool = 'none';          // 'none' | 'brush' | 'eraser' | 'refine'
 let brushSize = 34;         // diamètre du pinceau en pixels écran
 const segmenters = {};      // cache des modèles { b0, b2, b3 }
-let quality = 'b3';
+// Sur mobile : modèle plus léger par défaut (l'appareil photo ferme sinon
+// la page en arrière-plan par manque de mémoire)
+const isMobile = Math.min(window.screen.width, window.screen.height) < 700;
+let quality = isMobile ? 'b2' : 'b3';
+let pendingColor = null;    // couleur à réappliquer après restauration de session
 
 // Alpha final = IA + retouches, puis affinage (pinceau contour, lissage,
 // contour progressif, contraste, décalage du bord) — comme Photoshop.
@@ -168,33 +172,38 @@ function selectColor(hex, name, el) {
   selectedColor = hex;
   $('colorName').innerHTML = `<span class="dot" style="background:${hex}"></span>${name} <code>${hex}</code>`;
   applyColor();
+  persistState();
 }
 
 // ---- Chargement image ----
 function handleFile(file) {
   if (!file || !file.type.startsWith('image/')) return;
+  const url = URL.createObjectURL(file);
   const img = new Image();
-  img.onload = () => {
-    const maxW = 1280;
-    const scale = Math.min(1, maxW / img.width);
-    canvas.width = Math.round(img.width * scale);
-    canvas.height = Math.round(img.height * scale);
-    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-    baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    wallMask = null; coloredImageData = null;
-    alphaAll = null; regionMap = null; regionSizes = null; wallSelection = null;
-    aiAlpha = null; editDelta = null; editRefine = null; undoStack.length = 0; guideCache = null;
-    origCanvas.width = canvas.width;
-    origCanvas.height = canvas.height;
-    origCtx.putImageData(baseImageData, 0, 0);
-    baWrap.hidden = true;
-    setBA(50);
-    $('refinePanel').style.display = 'block';
-    dropzone.style.display = 'none';
-    frame.hidden = false;
-    runSegmentation();
-  };
-  img.src = URL.createObjectURL(file);
+  img.onload = () => { loadFromImage(img); URL.revokeObjectURL(url); };
+  img.onerror = () => setStatus('❌ Impossible de lire cette image.', 'err');
+  img.src = url;
+}
+
+function loadFromImage(img) {
+  const maxW = 1280;
+  const scale = Math.min(1, maxW / img.width);
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  baseImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  wallMask = null; coloredImageData = null;
+  alphaAll = null; regionMap = null; regionSizes = null; wallSelection = null;
+  aiAlpha = null; editDelta = null; editRefine = null; undoStack.length = 0; guideCache = null;
+  origCanvas.width = canvas.width;
+  origCanvas.height = canvas.height;
+  origCtx.putImageData(baseImageData, 0, 0);
+  baWrap.hidden = true;
+  setBA(50);
+  $('refinePanel').style.display = 'block';
+  dropzone.style.display = 'none';
+  frame.hidden = false;
+  runSegmentation();
 }
 fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
 cameraInput.addEventListener('change', e => handleFile(e.target.files[0]));
@@ -262,6 +271,33 @@ setBA(50);
 // Page unique : l'espace de travail est visible dès l'arrivée,
 // avec le chargeur de photo intégré au centre.
 $('app').style.display = 'grid';
+$('quality').value = quality;
+
+// ---- Anti-redémarrage mobile : sauvegarde et restauration de session ----
+// L'appareil photo peut faire fermer la page par le système (manque de RAM) ;
+// on restaure alors la photo et la couleur automatiquement.
+function persistState() {
+  try {
+    if (!baseImageData) return;
+    sessionStorage.setItem('wc_state', JSON.stringify({
+      photo: canvas.toDataURL('image/jpeg', 0.82),
+      color: selectedColor
+    }));
+  } catch (e) { /* quota dépassé : on ignore */ }
+}
+(function restoreState() {
+  try {
+    const st = JSON.parse(sessionStorage.getItem('wc_state') || 'null');
+    if (!st || !st.photo) return;
+    pendingColor = st.color || null;
+    const img = new Image();
+    img.onload = () => {
+      loadFromImage(img);
+      setStatus('🔄 Session restaurée — vous pouvez continuer.', 'info');
+    };
+    img.src = st.photo;
+  } catch (e) {}
+})();
 
 // ---- Sélection du mur au clic : ne peindre qu'un seul mur ----
 canvas.addEventListener('click', e => {
@@ -525,6 +561,13 @@ async function runSegmentation() {
     editDelta = null; undoStack.length = 0;
     canvas.style.cursor = 'crosshair';
     setStatus('✅ Murs détectés ! Choisissez une couleur — ou cliquez sur un mur précis pour ne peindre que lui.', 'ok');
+    // restauration : réapplique la couleur choisie avant le redémarrage
+    if (pendingColor) {
+      const idx = PALETTE.findIndex(p => p[2] === pendingColor);
+      pendingColor = null;
+      if (idx >= 0) paletteEl.children[idx].click();
+    }
+    persistState();
   } catch (err) {
     console.error(err);
     setStatus('❌ Erreur IA : ' + err.message, 'err');
