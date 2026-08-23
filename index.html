@@ -1245,6 +1245,13 @@ body.mobile .toolgrid, body.mobile .render-row, body.mobile .refine-row {
   gap: 9px; padding-bottom: 8px;
   scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
+  /* le geste est capturé par la glissière : la page ne défile plus avec */
+  touch-action: pan-x;
+  overscroll-behavior: contain;
+}
+body.mobile .toolgrid .tbtn, body.mobile .render-row .slider-box,
+body.mobile .refine-row .slider-box {
+  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
 }
 body.mobile .toolgrid::-webkit-scrollbar, body.mobile .render-row::-webkit-scrollbar,
 body.mobile .refine-row::-webkit-scrollbar { height: 4px; }
@@ -1263,7 +1270,10 @@ body.phone #palette {
   justify-content: flex-start;
   gap: 9px; padding-bottom: 8px; max-height: none;
   scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  overscroll-behavior: contain;
 }
+body.phone #palette .swatch-item { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 body.phone #palette::-webkit-scrollbar { height: 4px; }
 body.phone #palette::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 4px; }
 body.phone .swatch-item { flex: 0 0 auto; width: 168px; scroll-snap-align: start; padding: 7px 9px; }
