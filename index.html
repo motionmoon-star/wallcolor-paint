@@ -232,9 +232,10 @@ async function openCamera() {
     $('camVideo').srcObject = camStream;
     $('camModal').hidden = false;
   } catch (e) {
-    // caméra indisponible (permission refusée ou connexion non sécurisée) :
-    // repli sur le sélecteur de fichier classique
-    cameraInput.click();
+    // caméra indisponible : message explicite (le repli silencieux vers le
+    // sélecteur échoue hors geste utilisateur sur iOS)
+    setStatus('📷 Caméra intégrée indisponible (' + e.name + '). Utilisez « 📁 Uploader » '
+      + (isSecureContext ? 'après avoir autorisé la caméra dans les réglages.' : '— la caméra en direct exige une connexion sécurisée (site GitHub).'), 'warn');
   }
 }
 function closeCamera() {
@@ -990,6 +991,7 @@ header {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 18px; backdrop-filter: blur(6px);
 }
+#camModal[hidden] { display: none !important; }
 #camVideo {
   max-width: 94vw; max-height: 74vh; border-radius: 18px;
   background: #000; box-shadow: 0 20px 60px rgba(0,0,0,.7);
