@@ -1006,14 +1006,14 @@ header {
   justify-content: space-between; align-items: baseline;
 }
 .ptitle .count { font-size: .62rem; color: var(--accent2); }
-.toolgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.toolgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
 .tbtn {
-  display: flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 12px 6px; border-radius: 12px; background: rgba(255,255,255,.05);
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px; border-radius: 11px; background: rgba(255,255,255,.05);
   border: 1px solid var(--border); color: var(--text); cursor: pointer;
-  font-size: .74rem; font-weight: 700; transition: .15s; text-align: center;
+  font-size: .68rem; font-weight: 700; transition: .15s; text-align: center;
 }
-.tbtn .ico { font-size: 1.25rem; }
+.tbtn .ico { font-size: 1.02rem; }
 .tbtn:hover { background: rgba(255,255,255,.12); transform: translateY(-1px); }
 .tbtn.active { background: rgba(124,108,255,.3); border-color: var(--accent); }
 #leftPanel .slider-box { flex-direction: column; align-items: stretch; gap: 6px; width: 100%; padding: 8px 12px; }
@@ -1141,6 +1141,7 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
   <aside id="leftPanel">
     <div class="ptitle">Outils</div>
     <div class="toolgrid">
+      <button class="tbtn" id="resetBtn" title="Charger une autre photo"><span class="ico">🔄</span>Nouvelle photo</button>
       <button class="tbtn active" id="selectBtn" title="Cliquer sur un mur pour ne peindre que lui"><span class="ico">✋</span>Sélection</button>
       <button class="tbtn" id="brushBtn" title="Sélection rapide : ajoute des zones au masque en épousant les contours"><span class="ico">🖌</span>Ajouter</button>
       <button class="tbtn" id="eraserBtn" title="Effacer la peinture sur les meubles / objets"><span class="ico">🧽</span>Effacer</button>
@@ -1148,7 +1149,6 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
       <button class="tbtn" id="undoBtn" title="Annuler la dernière retouche"><span class="ico">↩</span>Annuler</button>
       <button class="tbtn" id="clearEditsBtn" title="Supprimer toutes les retouches manuelles"><span class="ico">♻️</span>Effacer retouches</button>
       <button class="tbtn" id="maskBtn" title="Afficher le masque détecté"><span class="ico">👁</span>Masque</button>
-      <button class="tbtn" id="resetBtn" title="Charger une autre photo"><span class="ico">🔄</span>Nouvelle photo</button>
     </div>
     <div class="slider-box" id="brushBox" style="display:none">
       <label>Taille du pinceau</label>
