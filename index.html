@@ -877,23 +877,28 @@ header {
   opacity: .07; z-index: -1; pointer-events: none; user-select: none;
 }
 
-/* Logos dans la ligne du titre WallColor Paint */
-.logo #wcLogo {
-  height: 62px; width: auto; vertical-align: middle;
+/* Ligne de bannière : BLANLUX au début, logo WallColor Paint à la fin */
+#bannerRow {
+  display: flex; align-items: center; justify-content: center; gap: 18px;
+  width: min(94vw, 1060px); margin: 14px auto 4px;
+}
+#bannerRow #bannerWrap { flex: 0 1 680px; margin: 0; }
+#blanluxLogo { height: 46px; width: auto; filter: drop-shadow(0 4px 12px rgba(0,0,0,.5)); }
+#wcLogo {
+  height: 54px; width: auto;
   filter: drop-shadow(0 4px 14px rgba(0,0,0,.55));
 }
-.logo #blanluxLogo, .logo #satinLogo {
-  height: 58px; width: auto; vertical-align: middle;
-  filter: drop-shadow(0 4px 12px rgba(0,0,0,.5));
+
+/* Logo SATIN DECO en tête du nuancier (panneau droit) */
+#rightPanel #satinLogo {
+  display: block; height: 84px; width: auto; margin: 2px auto 4px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,.45));
 }
-.logo .logo-anim { margin-right: 18px; }
-.logo #satinLogo { margin-left: 18px; }
 .sub { max-width: 680px; margin: 12px auto 0; }
 @media (max-width: 640px) {
-  .logo #blanluxLogo, .logo #satinLogo { height: 38px; }
-  .logo #wcLogo { height: 40px; }
-  .logo .logo-anim { margin-right: 10px; }
-  .logo #satinLogo { margin-left: 10px; }
+  #blanluxLogo { height: 32px; }
+  #wcLogo { height: 36px; }
+  #rightPanel #satinLogo { height: 54px; }
   #bgWatermark { height: 220px; }
 }
 
@@ -1110,16 +1115,15 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
 <body>
 <img id="bgWatermark" src="logo-satin-deco.png" alt="" aria-hidden="true">
 <header>
-  <div class="logo">
+  <div id="bannerRow">
     <span class="logo-anim"><img id="blanluxLogo" src="logo-blanlux.png" alt="BLANLUX"></span>
+    <div id="bannerWrap">
+      <div class="banner active">🏠 WallColor Paint — Visualisez vos murs en 42 teintes SATIN DECO</div>
+      <div class="banner">📸 Prenez une photo : l'IA détecte les murs automatiquement</div>
+      <div class="banner">🖌 Retouchez comme dans Photoshop : masques, pinceaux, affinage des contours</div>
+      <div class="banner">🔒 100 % local : vos photos ne quittent jamais votre appareil</div>
+    </div>
     <img id="wcLogo" src="logo-wallcolor.png" alt="WallColor Paint">
-    <img id="satinLogo" src="logo-satin-deco.png" alt="BLANLUX SATIN DECO">
-  </div>
-  <div id="bannerWrap">
-    <div class="banner active">🏠 WallColor Paint — Visualisez vos murs en 42 teintes SATIN DECO</div>
-    <div class="banner">📸 Prenez une photo : l'IA détecte les murs automatiquement</div>
-    <div class="banner">🖌 Retouchez comme dans Photoshop : masques, pinceaux, affinage des contours</div>
-    <div class="banner">🔒 100 % local : vos photos ne quittent jamais votre appareil</div>
   </div>
   <p class="sub">Photographiez ou uploadez votre pièce — l'IA détecte les murs et applique la teinte SATIN DECO choisie, sans toucher aux meubles ni à la décoration.</p>
 </header>
@@ -1199,6 +1203,7 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
   </main>
 
   <aside id="rightPanel">
+    <img id="satinLogo" src="logo-satin-deco.png" alt="BLANLUX SATIN DECO">
     <div class="ptitle">Nuancier Satinée Color <span class="count">42 teintes</span></div>
     <div id="palette"></div>
   </aside>
