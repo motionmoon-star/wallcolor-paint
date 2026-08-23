@@ -314,6 +314,17 @@ setBA(50);
 $('app').style.display = 'grid';
 $('quality').value = quality;
 
+// ---- Mise en page mobile pilotée par JavaScript (fiable sur tous les téléphones) ----
+// Les classes body.mobile / body.phone activent les glissières horizontales.
+function applyLayoutMode() {
+  const w = window.innerWidth || document.documentElement.clientWidth;
+  document.body.classList.toggle('mobile', w <= 1040);
+  document.body.classList.toggle('phone', w <= 700);
+}
+applyLayoutMode();
+window.addEventListener('resize', applyLayoutMode);
+window.addEventListener('orientationchange', applyLayoutMode);
+
 // ---- Anti-redémarrage mobile : sauvegarde et restauration de session ----
 // L'appareil photo peut faire fermer la page par le système (manque de RAM) ;
 // on restaure alors la photo et la couleur automatiquement.
@@ -1221,65 +1232,55 @@ input[type=range] { accent-color: var(--accent); }
 #colorName code { color: var(--accent2); font-size: .8em; }
 
 footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: center; }
-@media (max-width: 1040px) {
-  #app { grid-template-columns: 1fr; }
-  #leftPanel, #rightPanel { position: static; }
-  /* ordre : photo, puis outils, puis nuancier */
-  #centerPanel { order: -1; }
-  #leftPanel { order: 0; }
-  #rightPanel { order: 1; }
-  /* outils et réglages en glissière horizontale fluide */
-  .toolgrid, .render-row, .refine-row {
-    display: flex; flex-direction: row; overflow-x: auto;
-    gap: 9px; padding-bottom: 8px;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-  }
-  .toolgrid::-webkit-scrollbar, .render-row::-webkit-scrollbar,
-  .refine-row::-webkit-scrollbar { height: 4px; }
-  .toolgrid::-webkit-scrollbar-thumb, .render-row::-webkit-scrollbar-thumb,
-  .refine-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 4px; }
-  .tbtn { flex: 0 0 auto; min-width: 80px; scroll-snap-align: center; }
-  #leftPanel .slider-box { flex: 0 0 auto; width: 160px; scroll-snap-align: center; }
-  #leftPanel select, #leftPanel input[type=range] { width: 100%; }
-  #palette { grid-template-columns: repeat(3, 1fr); max-height: none; }
+/* Panneaux empilés + glissières horizontales (classe posée par JavaScript :
+   détection fiable de l'écran, indépendamment des media-queries) */
+body.mobile #app { grid-template-columns: 1fr; }
+body.mobile #leftPanel, body.mobile #rightPanel { position: static; }
+body.mobile #centerPanel { order: -1; }
+body.mobile #leftPanel { order: 0; }
+body.mobile #rightPanel { order: 1; }
+body.mobile .toolgrid, body.mobile .render-row, body.mobile .refine-row {
+  display: flex; flex-direction: row; overflow-x: auto;
+  justify-content: flex-start;
+  gap: 9px; padding-bottom: 8px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
 }
+body.mobile .toolgrid::-webkit-scrollbar, body.mobile .render-row::-webkit-scrollbar,
+body.mobile .refine-row::-webkit-scrollbar { height: 4px; }
+body.mobile .toolgrid::-webkit-scrollbar-thumb, body.mobile .render-row::-webkit-scrollbar-thumb,
+body.mobile .refine-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 4px; }
+body.mobile .tbtn { flex: 0 0 auto; min-width: 80px; scroll-snap-align: start; }
+body.mobile #leftPanel .slider-box { flex: 0 0 auto; width: 160px; scroll-snap-align: start; }
+body.mobile #leftPanel select, body.mobile #leftPanel input[type=range] { width: 100%; }
+body.mobile #palette { grid-template-columns: repeat(3, 1fr); max-height: none; }
 
-/* ---- Téléphone : nuancier aussi en glissière en bas ---- */
+/* ---- Téléphone : nuancier aussi en glissière, marges compactes ---- */
 .render-row, .refine-row { display: flex; flex-direction: column; gap: 10px; }
-@media (max-width: 700px) {
-  .toolgrid, .render-row, .refine-row {
-    display: flex; flex-direction: row; overflow-x: auto;
-    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
-  }
-  #rightPanel #satinLogo { height: 48px; }
-  #palette {
-    display: flex; flex-direction: row; overflow-x: auto; gap: 9px;
-    max-height: none; padding-bottom: 8px;
-    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
-  }
-  #palette::-webkit-scrollbar { height: 4px; }
-  #palette::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 4px; }
-  .swatch-item { flex: 0 0 auto; width: 168px; scroll-snap-align: center; padding: 7px 9px; }
-  .swatch-item .sq { width: 34px; height: 34px; }
-  .swatch-item .nm { font-size: .78rem; }
-  #downloadBtn { width: 100%; }
-
-  /* Adaptation générale téléphone : marges compactes, pas de débordement,
-     photo calée sur la hauteur visible réelle (barre d'adresse Safari) */
-  body { padding: 10px 8px 40px; overflow-x: hidden; }
-  header { margin-bottom: 10px; }
-  #bannerRow { gap: 10px; margin: 8px auto 2px; width: 100%; }
-  .banner { font-size: .72rem; }
-  .sub { font-size: .8rem; margin-top: 8px; }
-  #canvas { max-height: calc(100dvh - 330px); }
-  .frame { padding: 5px; border-radius: 14px; }
-  #centerPanel #dropzone { min-height: 280px; padding: 26px 12px; }
-  #leftPanel, #rightPanel { padding: 8px 9px; border-radius: 14px; gap: 8px; }
-  /* évite le zoom automatique iOS quand on touche un curseur/sélecteur */
-  select, input[type=range] { font-size: 16px; }
-  .tbtn { min-width: 74px; padding: 7px 4px; }
-}@media (max-width: 560px) {
+body.phone #rightPanel #satinLogo { height: 48px; }
+body.phone #palette {
+  display: flex; flex-direction: row; overflow-x: auto;
+  justify-content: flex-start;
+  gap: 9px; padding-bottom: 8px; max-height: none;
+  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+}
+body.phone #palette::-webkit-scrollbar { height: 4px; }
+body.phone #palette::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 4px; }
+body.phone .swatch-item { flex: 0 0 auto; width: 168px; scroll-snap-align: start; padding: 7px 9px; }
+body.phone .swatch-item .sq { width: 34px; height: 34px; }
+body.phone .swatch-item .nm { font-size: .78rem; }
+body.phone #downloadBtn { width: 100%; }
+body.phone { padding: 10px 8px 40px; overflow-x: hidden; }
+body.phone header { margin-bottom: 10px; }
+body.phone #bannerRow { gap: 10px; margin: 8px auto 2px; width: 100%; }
+body.phone .banner { font-size: .72rem; }
+body.phone .sub { font-size: .8rem; margin-top: 8px; }
+body.phone #canvas { max-height: calc(100dvh - 330px); }
+body.phone .frame { padding: 5px; border-radius: 14px; }
+body.phone #centerPanel #dropzone { min-height: 280px; padding: 26px 12px; }
+body.phone #leftPanel, body.phone #rightPanel { padding: 8px 9px; border-radius: 14px; gap: 8px; }
+body.phone select, body.phone input[type=range] { font-size: 16px; }
+body.phone .tbtn { min-width: 74px; padding: 7px 4px; }@media (max-width: 560px) {
   .logo { font-size: 1.3rem; }
   .toolgrid { grid-template-columns: repeat(2, 1fr); }
   #palette { grid-template-columns: 1fr 1fr; }
