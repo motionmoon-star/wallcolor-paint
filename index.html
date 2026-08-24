@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WallColor Paint — BLANLUX SATIN DECO</title>
 <script type="module">
 import { pipeline, env, RawImage } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0';
@@ -202,7 +202,7 @@ function loadFromImage(img) {
   origCtx.putImageData(baseImageData, 0, 0);
   baWrap.hidden = true;
   setBA(50);
-  $('refinePanel').style.display = 'block';
+  $('refinePanel').style.display = '';
   dropzone.style.display = 'none';
   frame.hidden = false;
   runSegmentation();
@@ -309,21 +309,9 @@ baBar.addEventListener('pointerup', () => baDragging = false);
 baBar.addEventListener('pointercancel', () => baDragging = false);
 setBA(50);
 
-// Page unique : l'espace de travail est visible dès l'arrivée,
-// avec le chargeur de photo intégré au centre.
-$('app').style.display = 'grid';
+// Page unique : le chargeur de photo est intégré au centre ; la visibilité
+// de l'espace de travail est pilotée par la CSS (#app, plus de style inline).
 $('quality').value = quality;
-
-// ---- Mise en page mobile pilotée par JavaScript (fiable sur tous les téléphones) ----
-// Les classes body.mobile / body.phone activent les glissières horizontales.
-function applyLayoutMode() {
-  const w = window.innerWidth || document.documentElement.clientWidth;
-  document.body.classList.toggle('mobile', w <= 1040);
-  document.body.classList.toggle('phone', w <= 700);
-}
-applyLayoutMode();
-window.addEventListener('resize', applyLayoutMode);
-window.addEventListener('orientationchange', applyLayoutMode);
 
 // ---- Anti-redémarrage mobile : sauvegarde et restauration de session ----
 // L'appareil photo peut faire fermer la page par le système (manque de RAM) ;
@@ -402,6 +390,12 @@ function setTool(t) {
   brushCursor.classList.toggle('erase', t === 'eraser');
   brushCursor.classList.toggle('refine', t === 'refine');
   canvas.style.touchAction = t === 'none' ? 'auto' : 'none'; // dessin au doigt
+  // Bande d'outils mobile : centre l'outil activé pour le passage fluide
+  if (matchMedia('(max-width: 700px)').matches) {
+    const map = { none: 'selectBtn', brush: 'brushBtn', eraser: 'eraserBtn', refine: 'refineBtn' };
+    const el = document.getElementById(map[t]);
+    if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
   if (t === 'brush') setStatus('🖌 Sélection rapide : peignez la zone à ajouter — elle épouse les contours des objets.', 'info');
   else if (t === 'eraser') setStatus('🧽 Peignez les zones à EFFACER (meubles, déco, objets touchés par erreur).', 'info');
   else if (t === 'refine') setStatus('🪶 Peignez LE LONG des bords à affiner : ils se collent aux contours des objets.', 'info');
@@ -1114,8 +1108,11 @@ header {
 .btn.active { outline: 2px solid var(--accent2); }
 
 /* ---- Espace de travail : outils à gauche, photo au centre, couleurs à droite ---- */
+/* Visible dès l'arrivée (page unique). display piloté par la CSS uniquement :
+   grid desktop, flex column dans le media téléphone — un style inline ici
+   écraserait le media query et casserait les bandes mobiles. */
 #app {
-  display: none; width: min(97vw, 1400px); margin: 0 auto;
+  display: grid; width: min(97vw, 1400px); margin: 0 auto;
   grid-template-columns: 306px minmax(0, 1fr) 306px;
   gap: 14px; align-items: start;
 }
@@ -1143,6 +1140,9 @@ header {
 .tbtn.active { background: rgba(124,108,255,.3); border-color: var(--accent); }
 #leftPanel .slider-box { flex-direction: column; align-items: stretch; gap: 6px; width: 100%; padding: 8px 12px; }
 #leftPanel .slider-box label { display: flex; justify-content: space-between; }
+.settings-strip { display: flex; flex-direction: column; gap: 10px; }
+.settings-strip .slider-box { width: 100%; }
+.settings-strip > #refinePanel { display: flex; flex-direction: column; gap: 10px; }
 #leftPanel input[type=range], #leftPanel select { width: 100%; }
 #centerPanel { min-width: 0; }
 .frame {
@@ -1151,13 +1151,15 @@ header {
   display: flex; justify-content: center; align-items: center;
   padding: 8px;
 }
+/* display:flex ci-dessus surcharge la règle UA [hidden] : sans ceci le cadre
+   vide reste rendu (et intercepte les pointeurs) avant le chargement d'une photo */
+.frame[hidden] { display: none !important; }
 /* Affichage adaptatif : la photo garde son ratio (16:9, 9:16, carré…) et
    s'inscrit dans la largeur disponible ET la hauteur de l'écran */
 #canvasBox { position: relative; display: block; max-width: 100%; }
 #canvas {
   display: block; width: auto; height: auto;
   max-width: 100%; max-height: calc(100vh - 240px);
-  max-height: calc(100dvh - 240px); /* hauteur réelle sur mobile (barre Safari) */
 }
 
 /* ---- Curseur Avant / Après ---- */
@@ -1232,68 +1234,131 @@ input[type=range] { accent-color: var(--accent); }
 #colorName code { color: var(--accent2); font-size: .8em; }
 
 footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: center; }
-/* Panneaux empilés + glissières horizontales (classe posée par JavaScript :
-   détection fiable de l'écran, indépendamment des media-queries) */
-body.mobile #app { grid-template-columns: 1fr; }
-body.mobile #leftPanel, body.mobile #rightPanel { position: static; }
-body.mobile #centerPanel { order: -1; }
-body.mobile #leftPanel { order: 0; }
-body.mobile #rightPanel { order: 1; }
-body.mobile .toolgrid, body.mobile .render-row, body.mobile .refine-row {
-  display: flex; flex-direction: row; overflow-x: auto;
-  justify-content: flex-start;
-  gap: 9px; padding-bottom: 8px;
-  scroll-snap-type: x proximity;
-  -webkit-overflow-scrolling: touch;
-  /* le geste est capturé par la glissière : la page ne défile plus avec */
-  touch-action: pan-x;
-  overscroll-behavior: contain;
+@media (max-width: 1040px) {
+  #app { grid-template-columns: 1fr; }
+  #leftPanel, #rightPanel { position: static; }
+  .toolgrid { grid-template-columns: repeat(4, 1fr); }
+  #palette { grid-template-columns: repeat(3, 1fr); max-height: none; }
 }
-body.mobile .toolgrid .tbtn, body.mobile .render-row .slider-box,
-body.mobile .refine-row .slider-box {
-  user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-}
-body.mobile .toolgrid::-webkit-scrollbar, body.mobile .render-row::-webkit-scrollbar,
-body.mobile .refine-row::-webkit-scrollbar { height: 4px; }
-body.mobile .toolgrid::-webkit-scrollbar-thumb, body.mobile .render-row::-webkit-scrollbar-thumb,
-body.mobile .refine-row::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 4px; }
-body.mobile .tbtn { flex: 0 0 auto; min-width: 80px; scroll-snap-align: start; }
-body.mobile #leftPanel .slider-box { flex: 0 0 auto; width: 160px; scroll-snap-align: start; }
-body.mobile #leftPanel select, body.mobile #leftPanel input[type=range] { width: 100%; }
-body.mobile #palette { grid-template-columns: repeat(3, 1fr); max-height: none; }
 
-/* ---- Téléphone : nuancier aussi en glissière, marges compactes ---- */
-.render-row, .refine-row { display: flex; flex-direction: column; gap: 10px; }
-body.phone #rightPanel #satinLogo { height: 48px; }
-body.phone #palette {
-  display: flex; flex-direction: row; overflow-x: auto;
-  justify-content: flex-start;
-  gap: 9px; padding-bottom: 8px; max-height: none;
-  scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
-  overscroll-behavior: contain;
-}
-body.phone #palette .swatch-item { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-body.phone #palette::-webkit-scrollbar { height: 4px; }
-body.phone #palette::-webkit-scrollbar-thumb { background: rgba(255,255,255,.22); border-radius: 4px; }
-body.phone .swatch-item { flex: 0 0 auto; width: 168px; scroll-snap-align: start; padding: 7px 9px; }
-body.phone .swatch-item .sq { width: 34px; height: 34px; }
-body.phone .swatch-item .nm { font-size: .78rem; }
-body.phone #downloadBtn { width: 100%; }
-body.phone { padding: 10px 8px 40px; overflow-x: hidden; }
-body.phone header { margin-bottom: 10px; }
-body.phone #bannerRow { gap: 10px; margin: 8px auto 2px; width: 100%; }
-body.phone .banner { font-size: .72rem; }
-body.phone .sub { font-size: .8rem; margin-top: 8px; }
-body.phone #canvas { max-height: calc(100dvh - 330px); }
-body.phone .frame { padding: 5px; border-radius: 14px; }
-body.phone #centerPanel #dropzone { min-height: 280px; padding: 26px 12px; }
-body.phone #leftPanel, body.phone #rightPanel { padding: 8px 9px; border-radius: 14px; gap: 8px; }
-body.phone select, body.phone input[type=range] { font-size: 16px; }
-body.phone .tbtn { min-width: 74px; padding: 7px 4px; }@media (max-width: 560px) {
-  .logo { font-size: 1.3rem; }
-  .toolgrid { grid-template-columns: repeat(2, 1fr); }
-  #palette { grid-template-columns: 1fr 1fr; }
+/* ================== AFFICHAGE TÉLÉPHONE ==================
+   Photo en haut → outils en bande défilante → réglages & affinage
+   (même système) → teinte sélectionnée → nuancier grille compacte. */
+@media (max-width: 700px) {
+  body { padding: 12px 10px calc(18px + env(safe-area-inset-bottom)); }
+
+  /* --- En-tête compact --- */
+  header { margin-bottom: 10px; }
+  #bannerRow { gap: 10px; margin-top: 6px; }
+  #bannerWrap { height: 40px; }
+
+  /* --- Ordre vertical : photo, puis outils, puis nuancier --- */
+  #app { display: flex; flex-direction: column; gap: 0; width: 100%; }
+  #centerPanel { order: 0; }
+  #leftPanel   { order: 1; }
+  #rightPanel  { order: 2; }
+
+  /* --- Photo pleine largeur, hauteur contenue --- */
+  #centerPanel #dropzone { min-height: 300px; }
+  #canvas { max-height: min(58vh, calc(100vh - 360px)); }
+  /* Cadre pleine largeur mais transparent : la photo est centrée sans
+     « letterbox » noir, et fit-content est impossible ici (boucle de taille
+     avec canvas max-width:100%) */
+  .frame { padding: 6px; border-radius: 16px; background: transparent; border-color: transparent; box-shadow: none; }
+  .status { margin: 8px 0 2px; font-size: .8rem; }
+
+  /* --- Panneaux « déchromés » : ce sont maintenant des bandes --- */
+  #leftPanel, #rightPanel {
+    background: none; border: none; backdrop-filter: none;
+    padding: 0; gap: 0; position: static; display: block;
+  }
+
+  /* Titres de bandes */
+  #leftPanel .ptitle, #rightPanel .ptitle {
+    display: flex; align-items: center; gap: 6px;
+    margin: 10px 14px 4px;
+  }
+  #leftPanel .ptitle::after, #rightPanel .ptitle::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* --- Bande 1 : Outils (défilement horizontal aimanté) --- */
+  .toolgrid {
+    display: flex; gap: 7px;
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    padding: 4px 12px 8px;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .toolgrid::-webkit-scrollbar { display: none; }
+  .tbtn {
+    flex: 0 0 auto; scroll-snap-align: center;
+    min-width: 64px; padding: 9px 6px 7px; font-size: .68rem;
+    transition: transform .25s cubic-bezier(.34,1.56,.64,1), background .25s, border-color .25s;
+  }
+  .tbtn.active { transform: scale(1.06); }
+
+  /* --- Bande 2 : Réglages & affinage (même système) --- */
+  .settings-strip {
+    display: flex; flex-direction: row; gap: 7px;
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    padding: 4px 12px 8px;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .settings-strip::-webkit-scrollbar { display: none; }
+  /* #refinePanel devient transparent : ses cartes participent à la bande */
+  /* Contrat : JS le montre avec style.display='' et le cache avec 'none'.   */
+  /* style="" → l'attribut ne contient pas 'none' → display:contents s'applique. */
+  .settings-strip > #refinePanel:not([style*='none']) { display: contents; }
+  #leftPanel .settings-strip .slider-box,
+  #brushBox {
+    flex: 0 0 auto; scroll-snap-align: center;
+    flex-direction: column; align-items: stretch; gap: 4px;
+    min-width: 148px; padding: 8px 12px; border-radius: 12px;
+    margin: 0;
+  }
+  .settings-strip .slider-box label { white-space: nowrap; font-size: .74rem; }
+  .settings-strip input[type=range] { width: 128px; }
+  #refineResetBtn { flex: 0 0 auto; scroll-snap-align: center; align-self: stretch; margin: 0; }
+  /* Télécharger : pilule accentuée en fin de bande */
+  .settings-strip #downloadBtn {
+    flex: 0 0 auto; scroll-snap-align: center; align-self: stretch;
+    margin: 0; padding: 8px 16px; border-radius: 12px;
+    font-size: .8rem; white-space: nowrap;
+    display: flex; align-items: center;
+  }
+
+  /* --- Teinte sélectionnée au-dessus du nuancier --- */
+  #colorName { margin: 2px 14px 4px; justify-content: flex-start; font-size: .85rem; }
+
+  /* --- Bande 3 : Nuancier en grille compacte (défilement vertical) --- */
+  #rightPanel #satinLogo { height: 44px; margin: 4px auto 0; }
+  #palette {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+    max-height: 168px;              /* ≈ 3 rangées de 48 px */
+    overflow-y: auto;
+    padding: 6px; margin: 0 12px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border); border-radius: 12px;
+    scrollbar-width: thin;
+  }
+  .swatch-item {
+    flex-direction: column; justify-content: center; gap: 0;
+    padding: 0; background: none; border: none; position: relative;
+  }
+  .swatch-item .sq {
+    width: 100%; aspect-ratio: 1 / 1; height: auto;
+    border-radius: 9px;
+  }
+  .swatch-item .nm { display: none; }   /* numéro·nom conservé dans title + #colorName */
+  .swatch-item.selected::after {
+    content: '✓'; position: absolute; inset: 0;
+    display: grid; place-items: center;
+    color: #fff; font-weight: 800; font-size: .95rem;
+    text-shadow: 0 1px 3px rgba(0,0,0,.85); pointer-events: none;
+  }
 }
 </style>
 </head>
@@ -1329,14 +1394,13 @@ body.phone .tbtn { min-width: 74px; padding: 7px 4px; }@media (max-width: 560px)
       <button class="tbtn" id="clearEditsBtn" title="Supprimer toutes les retouches manuelles"><span class="ico">♻️</span>Effacer retouches</button>
       <button class="tbtn" id="maskBtn" title="Afficher le masque détecté"><span class="ico">👁</span>Masque</button>
     </div>
-    <div class="slider-box" id="brushBox" style="display:none">
-      <label>Taille du pinceau</label>
-      <input type="range" id="brushSize" min="6" max="120" value="34">
-      <span id="brushSizeVal">34</span>
-    </div>
-
-    <div class="ptitle">Rendu</div>
-    <div class="render-row">
+    <div class="ptitle">Réglages <span class="count">&amp; affinage</span></div>
+    <div class="settings-strip">
+      <div class="slider-box" id="brushBox" style="display:none">
+        <label>Taille du pinceau</label>
+        <input type="range" id="brushSize" min="6" max="120" value="34">
+        <span id="brushSizeVal">34</span>
+      </div>
       <div class="slider-box">
         <label>Qualité IA</label>
         <select id="quality">
@@ -1349,20 +1413,17 @@ body.phone .tbtn { min-width: 74px; padding: 7px 4px; }@media (max-width: 560px)
         <label>Intensité <span id="strengthVal">90%</span></label>
         <input type="range" id="strength" min="0.3" max="1" step="0.05" value="0.9">
       </div>
-    </div>
 
-    <div id="refinePanel" style="display:none">
-      <div class="ptitle">Affiner le masque</div>
-      <div class="refine-row">
+      <div id="refinePanel" style="display:none">
         <div class="slider-box"><label>Lissage <span id="rSmoothV">0</span></label><input type="range" id="rSmooth" min="0" max="100" value="0"></div>
         <div class="slider-box"><label>Contour <span id="rFeatherV">0</span></label><input type="range" id="rFeather" min="0" max="100" value="0"></div>
         <div class="slider-box"><label>Contraste <span id="rContrastV">0</span></label><input type="range" id="rContrast" min="0" max="100" value="0"></div>
         <div class="slider-box"><label>Décalage <span id="rShiftV">0</span></label><input type="range" id="rShift" min="-100" max="100" value="0"></div>
+        <button class="tbtn" id="refineResetBtn"><span class="ico">♻️</span>Réinitialiser l'affinage</button>
       </div>
-      <button class="tbtn" id="refineResetBtn"><span class="ico">♻️</span>Réinitialiser l'affinage</button>
-    </div>
 
-    <button class="btn" id="downloadBtn">⬇️ Télécharger le résultat</button>
+      <button class="btn" id="downloadBtn">⬇️ Télécharger le résultat</button>
+    </div>
   </aside>
 
   <main id="centerPanel">
@@ -1398,12 +1459,12 @@ body.phone .tbtn { min-width: 74px; padding: 7px 4px; }@media (max-width: 560px)
     <button class="btn" id="camSnap">📸 Capturer</button>
   </div>
 </div>
-    <div id="colorName">Aucune couleur sélectionnée</div>
   </main>
 
   <aside id="rightPanel">
     <img id="satinLogo" src="logo-satin-deco.png" alt="BLANLUX SATIN DECO">
     <div class="ptitle">Nuancier Satinée Color <span class="count">42 teintes</span></div>
+    <div id="colorName">Aucune couleur sélectionnée</div>
     <div id="palette"></div>
   </aside>
 </div>
