@@ -202,7 +202,7 @@ function loadFromImage(img) {
   origCtx.putImageData(baseImageData, 0, 0);
   baWrap.hidden = true;
   setBA(50);
-  $('refinePanel').style.display = 'block';
+  $('refinePanel').style.display = '';
   dropzone.style.display = 'none';
   frame.hidden = false;
   runSegmentation();
@@ -391,6 +391,12 @@ function setTool(t) {
   brushCursor.classList.toggle('erase', t === 'eraser');
   brushCursor.classList.toggle('refine', t === 'refine');
   canvas.style.touchAction = t === 'none' ? 'auto' : 'none'; // dessin au doigt
+  // Bande d'outils mobile : centre l'outil activé pour le passage fluide
+  if (matchMedia('(max-width: 700px)').matches) {
+    const map = { none: 'selectBtn', brush: 'brushBtn', eraser: 'eraserBtn', refine: 'refineBtn' };
+    const el = document.getElementById(map[t]);
+    if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }
   if (t === 'brush') setStatus('🖌 Sélection rapide : peignez la zone à ajouter — elle épouse les contours des objets.', 'info');
   else if (t === 'eraser') setStatus('🧽 Peignez les zones à EFFACER (meubles, déco, objets touchés par erreur).', 'info');
   else if (t === 'refine') setStatus('🪶 Peignez LE LONG des bords à affiner : ils se collent aux contours des objets.', 'info');
