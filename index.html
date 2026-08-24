@@ -309,9 +309,8 @@ baBar.addEventListener('pointerup', () => baDragging = false);
 baBar.addEventListener('pointercancel', () => baDragging = false);
 setBA(50);
 
-// Page unique : l'espace de travail est visible dès l'arrivée,
-// avec le chargeur de photo intégré au centre.
-$('app').style.display = 'grid';
+// Page unique : le chargeur de photo est intégré au centre ; la visibilité
+// de l'espace de travail est pilotée par la CSS (#app, plus de style inline).
 $('quality').value = quality;
 
 // ---- Anti-redémarrage mobile : sauvegarde et restauration de session ----
@@ -1109,8 +1108,11 @@ header {
 .btn.active { outline: 2px solid var(--accent2); }
 
 /* ---- Espace de travail : outils à gauche, photo au centre, couleurs à droite ---- */
+/* Visible dès l'arrivée (page unique). display piloté par la CSS uniquement :
+   grid desktop, flex column dans le media téléphone — un style inline ici
+   écraserait le media query et casserait les bandes mobiles. */
 #app {
-  display: none; width: min(97vw, 1400px); margin: 0 auto;
+  display: grid; width: min(97vw, 1400px); margin: 0 auto;
   grid-template-columns: 306px minmax(0, 1fr) 306px;
   gap: 14px; align-items: start;
 }
@@ -1259,7 +1261,10 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
   /* --- Photo pleine largeur, hauteur contenue --- */
   #centerPanel #dropzone { min-height: 300px; }
   #canvas { max-height: min(58vh, calc(100vh - 360px)); }
-  .frame { padding: 6px; border-radius: 16px; width: fit-content; max-width: 100%; margin: 0 auto; }
+  /* Cadre pleine largeur mais transparent : la photo est centrée sans
+     « letterbox » noir, et fit-content est impossible ici (boucle de taille
+     avec canvas max-width:100%) */
+  .frame { padding: 6px; border-radius: 16px; background: transparent; border-color: transparent; box-shadow: none; }
   .status { margin: 8px 0 2px; font-size: .8rem; }
 
   /* --- Panneaux « déchromés » : ce sont maintenant des bandes --- */
