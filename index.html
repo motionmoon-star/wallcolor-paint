@@ -1149,6 +1149,9 @@ header {
   display: flex; justify-content: center; align-items: center;
   padding: 8px;
 }
+/* display:flex ci-dessus surcharge la règle UA [hidden] : sans ceci le cadre
+   vide reste rendu (et intercepte les pointeurs) avant le chargement d'une photo */
+.frame[hidden] { display: none !important; }
 /* Affichage adaptatif : la photo garde son ratio (16:9, 9:16, carré…) et
    s'inscrit dans la largeur disponible ET la hauteur de l'écran */
 #canvasBox { position: relative; display: block; max-width: 100%; }
