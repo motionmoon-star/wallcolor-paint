@@ -957,6 +957,44 @@ function labToPix(L, a, b) {
   ];
 }
 
+// ---- Mobile plein écran : en-tête applicatif, pop-over réglages, mode Affiner ----
+const mmMobile = matchMedia('(max-width: 700px)');
+const mPop = $('mPop');
+let mPopAnchor = null; // position desktop d'origine des sliders déplacés
+
+function mReparent() {
+  const qualite = $('quality').closest('.slider-box');
+  const intensite = $('strength').closest('.slider-box');
+  if (mmMobile.matches) {
+    if (qualite.parentElement !== mPop) {
+      if (!mPopAnchor) mPopAnchor = { parent: qualite.parentElement, before: qualite.nextSibling };
+      mPop.insertBefore(intensite, mPop.firstChild);
+      mPop.insertBefore(qualite, mPop.firstChild);
+    }
+  } else if (mPopAnchor && qualite.parentElement === mPop) {
+    mPopAnchor.parent.insertBefore(qualite, mPopAnchor.before);
+    mPopAnchor.parent.insertBefore(intensite, mPopAnchor.before);
+  }
+}
+if (mmMobile.addEventListener) mmMobile.addEventListener('change', mReparent);
+else mmMobile.addListener(mReparent);
+mReparent();
+
+$('mSettings').addEventListener('click', e => {
+  e.stopPropagation();
+  mPop.classList.toggle('open');
+});
+document.addEventListener('click', e => {
+  if (mPop.classList.contains('open') && !mPop.contains(e.target) && e.target.id !== 'mSettings')
+    mPop.classList.remove('open');
+});
+$('mDownload').addEventListener('click', () => $('downloadBtn').click());
+$('mAffineBtn').addEventListener('click', () => {
+  const strip = document.querySelector('.settings-strip');
+  strip.classList.toggle('affine');
+  $('mAffineBtn').classList.toggle('on', strip.classList.contains('affine'));
+});
+
 function hexToRgb(hex) {
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
@@ -1243,121 +1281,119 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
   #palette { grid-template-columns: repeat(3, 1fr); max-height: none; }
 }
 
+/* Éléments réservés au téléphone (en-tête applicatif, pop-over) */
+.m-only { display: none !important; }
+#mPop { display: none; }
+
 /* ================== AFFICHAGE TÉLÉPHONE ==================
-   Photo en haut → outils en bande défilante → réglages & affinage
-   (même système) → teinte sélectionnée → nuancier grille compacte. */
+   Application plein écran : tout tient dans le viewport, aucun
+   défilement de page. La photo occupe l'espace restant ; outils en
+   grille 2×4 ; réglages contextuels (Taille / ✨ Affiner) ;
+   nuancier à défilement interne ; ⚙️ regroupe Intensité + Qualité. */
 @media (max-width: 700px) {
-  body { padding: 12px 10px calc(18px + env(safe-area-inset-bottom)); }
-
-  /* --- En-tête compact --- */
-  header { margin-bottom: 10px; }
-  #bannerRow { gap: 10px; margin-top: 6px; }
-  #bannerWrap { height: 40px; }
-
-  /* --- Ordre vertical : photo, puis outils, puis nuancier --- */
-  #app { display: flex; flex-direction: column; gap: 0; width: 100%; }
-  #centerPanel { order: 0; }
-  #leftPanel   { order: 1; }
-  #rightPanel  { order: 2; }
-
-  /* --- Photo pleine largeur, hauteur contenue --- */
-  #centerPanel #dropzone { min-height: 300px; }
-  #canvas { max-height: min(58vh, calc(100vh - 360px)); }
-  /* Cadre pleine largeur mais transparent : la photo est centrée sans
-     « letterbox » noir, et fit-content est impossible ici (boucle de taille
-     avec canvas max-width:100%) */
-  .frame { padding: 6px; border-radius: 16px; background: transparent; border-color: transparent; box-shadow: none; }
-  .status { margin: 8px 0 2px; font-size: .8rem; }
-
-  /* --- Panneaux « déchromés » : ce sont maintenant des bandes --- */
-  #leftPanel, #rightPanel {
-    background: none; border: none; backdrop-filter: none;
-    padding: 0; gap: 0; position: static; display: block;
+  body {
+    padding: calc(4px + env(safe-area-inset-top)) 10px calc(6px + env(safe-area-inset-bottom));
+    height: 100vh;
+    height: 100svh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex; flex-direction: column; align-items: stretch;
   }
+  footer { display: none; }
 
-  /* Titres de bandes */
-  #leftPanel .ptitle, #rightPanel .ptitle {
-    display: flex; align-items: center; gap: 6px;
-    margin: 10px 14px 4px;
-  }
-  #leftPanel .ptitle::after, #rightPanel .ptitle::after {
-    content: ''; flex: 1; height: 1px; background: var(--border);
-  }
+  /* --- En-tête applicatif : logos mini + actions --- */
+  header { margin: 0 0 4px; width: 100%; }
+  .sub { display: none; }
+  #bannerRow { gap: 8px; margin: 0; width: 100%; }
+  #bannerWrap { display: none; }               /* bannières marketing hors app */
+  #blanluxLogo { height: 22px; }
+  #wcLogo { height: 26px; }
+  .m-only { display: flex !important; }
+  .m-head-actions { gap: 8px; margin-left: auto; }
+  .m-ico { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border);
+    background: rgba(255,255,255,.06); color: var(--text); font-size: 1rem;
+    display: grid; place-items: center; cursor: pointer; }
 
-  /* --- Bande 1 : Outils (défilement horizontal aimanté) --- */
-  .toolgrid {
-    display: flex; gap: 8px; align-items: stretch;
-    overflow-x: auto; overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    padding: 4px 12px 8px;
-    scrollbar-width: none; -webkit-overflow-scrolling: touch;
-  }
-  .toolgrid::-webkit-scrollbar { display: none; }
-  .tbtn {
-    flex: 0 0 auto; scroll-snap-align: center;
-    min-width: 80px; min-height: 66px; padding: 10px 8px 9px;
-    font-size: .72rem; gap: 4px; justify-content: center;
-    transition: transform .25s cubic-bezier(.34,1.56,.64,1), background .25s, border-color .25s;
-  }
-  .tbtn .ico { font-size: 1.18rem; }
-  .tbtn.active { transform: scale(1.06); }
+  /* --- Conteneur applicatif --- */
+  #app { display: flex; flex-direction: column; gap: 6px; width: 100%;
+         flex: 1 1 auto; min-height: 0; }
+  #centerPanel { order: 0; flex: 1 1 auto; min-height: 0;
+                 display: flex; flex-direction: column; position: relative; }
+  #leftPanel  { order: 1; flex: 0 0 auto; }
+  #rightPanel { order: 2; flex: 0 0 auto; }
 
-  /* --- Bande 2 : Réglages & affinage (même système) --- */
-  .settings-strip {
-    display: flex; flex-direction: row; gap: 8px; align-items: stretch;
-    overflow-x: auto; overscroll-behavior-x: contain;
-    scroll-snap-type: x proximity;
-    padding: 4px 12px 8px;
-    scrollbar-width: none; -webkit-overflow-scrolling: touch;
-  }
-  .settings-strip::-webkit-scrollbar { display: none; }
-  /* #refinePanel devient transparent : ses cartes participent à la bande */
-  /* Contrat : JS le montre avec style.display='' et le cache avec 'none'.   */
-  /* style="" → l'attribut ne contient pas 'none' → display:contents s'applique. */
-  .settings-strip > #refinePanel:not([style*='none']) { display: contents; }
-  #leftPanel .settings-strip .slider-box,
-  #brushBox {
-    flex: 0 0 auto; scroll-snap-align: center;
-    flex-direction: column; align-items: stretch; gap: 5px;
-    min-width: 156px; padding: 9px 12px; border-radius: 12px;
-    margin: 0;
-  }
-  .settings-strip .slider-box label { white-space: nowrap; font-size: .78rem; }
-  .settings-strip input[type=range] { width: 132px; }
-  #refineResetBtn { flex: 0 0 auto; scroll-snap-align: center; align-self: stretch; margin: 0; }
-  /* Télécharger : pilule accentuée en fin de bande */
-  .settings-strip #downloadBtn {
-    flex: 0 0 auto; scroll-snap-align: center; align-self: stretch;
-    margin: 0; padding: 8px 16px; border-radius: 12px;
-    font-size: .8rem; white-space: nowrap;
-    display: flex; align-items: center;
-  }
+  /* --- Photo : occupe tout l'espace restant, statut en surimpression --- */
+  #centerPanel #dropzone { flex: 1 1 auto; min-height: 0; margin: 0; }
+  .frame { flex: 1 1 auto; min-height: 0; padding: 4px; border-radius: 14px;
+           background: transparent; border-color: transparent; box-shadow: none; }
+  #canvas { max-width: 100%; max-height: 100%; width: auto; height: auto; }
+  .status { position: absolute; left: 14px; right: 14px; bottom: 10px; margin: 0;
+            font-size: .68rem; background: rgba(5,8,14,.72); backdrop-filter: blur(4px);
+            border-radius: 8px; padding: 4px 8px; z-index: 4; pointer-events: none; }
 
-  /* --- Teinte sélectionnée au-dessus du nuancier --- */
-  #colorName { margin: 2px 14px 4px; justify-content: flex-start; font-size: .85rem; }
+  /* --- Panneaux déchromés --- */
+  #leftPanel, #rightPanel { background: none; border: none; backdrop-filter: none;
+    padding: 0; gap: 0; position: static; display: block; }
+  #leftPanel .ptitle, #rightPanel .ptitle, #satinLogo { display: none; }
 
-  /* --- Bande 3 : Nuancier lisible (2 colonnes, nom + hex visibles) --- */
-  #rightPanel #satinLogo { height: 44px; margin: 4px auto 0; }
+  /* --- Outils : grille 2×4, plus rien à faire défiler --- */
+  .toolgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+              padding: 0; overflow: visible; }
+  .tbtn { min-width: 0; min-height: 54px; padding: 7px 4px 6px; font-size: .6rem;
+          gap: 3px; justify-content: center;
+          transition: transform .22s cubic-bezier(.34,1.56,.64,1), background .22s, border-color .22s; }
+  .tbtn .ico { font-size: 1.08rem; }
+  .tbtn.active { transform: scale(1.05); }
+
+  /* --- Rangée contextuelle : Taille (pinceau) / ✨ Affiner (4 curseurs) --- */
+  .settings-strip { display: flex; flex-direction: row; align-items: stretch; gap: 8px;
+                    padding: 0; margin: 0; overflow: visible; }
+  .settings-strip > #refinePanel { display: none; }             /* caché hors mode Affiner */
+  .settings-strip.affine > #refinePanel:not([style*='none']) { display: contents; }
+  .settings-strip.affine #brushBox { display: none !important; } /* les curseurs prennent la place */
+  #leftPanel .settings-strip .slider-box, #brushBox {
+    flex: 1 1 auto; flex-direction: row; align-items: center; gap: 8px;
+    min-width: 0; padding: 8px 12px; border-radius: 12px; margin: 0;
+  }
+  .settings-strip .slider-box label { white-space: nowrap; font-size: .74rem; }
+  .settings-strip input[type=range] { width: 100%; flex: 1; }
+  #refinePanel .slider-box { flex: 1 1 46%; flex-direction: row; gap: 6px; padding: 2px 4px;
+    background: none; border: none; }
+  #refineResetBtn { display: none; }
+  .settings-strip #downloadBtn { display: none; }   /* passe dans l'en-tête (⬇️) */
+  #mAffineBtn { flex: 0 0 auto; align-self: stretch; margin: 0; min-height: 44px;
+                padding: 6px 12px; font-size: .66rem; }
+  #mAffineBtn.on { background: linear-gradient(135deg,#7c6cff,#5b8dff); border-color: #9d92ff; }
+
+  /* --- Nuancier : pastilles rondes numérotées, défilement interne --- */
+  #colorName { margin: 0; padding: 2px 4px; justify-content: flex-start; font-size: .78rem; }
   #palette {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 7px;
-    max-height: min(340px, 42vh);   /* ~4-5 cartes visibles, défilement au pouce */
-    overflow-y: auto;
-    padding: 7px; margin: 0 12px;
+    grid-template-columns: repeat(5, 1fr); gap: 6px;
+    height: 148px; max-height: none; overflow-y: auto;
+    padding: 8px; margin: 0;
     background: rgba(255,255,255,.04);
     border: 1px solid var(--border); border-radius: 12px;
-    scrollbar-width: thin;
+    scrollbar-width: none; counter-reset: sw;
   }
-  .swatch-item {
-    flex-direction: row; align-items: center; gap: 8px;
-    padding: 6px 8px; border-radius: 10px;
-  }
-  .swatch-item .sq {
-    width: 38px; height: 38px; flex: 0 0 auto;
-    border-radius: 9px;
-  }
-  .swatch-item .nm { display: block; font-size: .72rem; line-height: 1.25; }
-  .swatch-item.selected { border-color: #fff; background: rgba(124,108,255,.28); box-shadow: 0 0 0 2px rgba(124,108,255,.5); }
+  #palette::-webkit-scrollbar { display: none; }
+  .swatch-item { flex-direction: column; justify-content: center; gap: 1px;
+    padding: 0; background: none; border: none; position: relative; counter-increment: sw; }
+  .swatch-item .sq { width: 100%; height: auto; aspect-ratio: 1 / 1; border-radius: 10px; }
+  .swatch-item .nm { display: none; }
+  .swatch-item::after { content: counter(sw, decimal-leading-zero);
+    font-size: .5rem; color: var(--muted); line-height: 1.4; }
+  .swatch-item.selected { border: none; background: none; box-shadow: none; }
+  .swatch-item.selected .sq { border-color: #fff; box-shadow: 0 0 0 2px rgba(124,108,255,.6); }
+
+  /* --- Pop-over réglages (⚙️) : Intensité + Qualité IA --- */
+  #mPop { position: absolute; top: 44px; right: 12px; z-index: 50; width: 250px;
+    flex-direction: column; gap: 8px;
+    background: #151b2c; border: 1px solid rgba(124,108,255,.5); border-radius: 14px;
+    box-shadow: 0 14px 40px rgba(0,0,0,.6); padding: 10px 12px; }
+  #mPop.open { display: flex; }
+  #mPop .slider-box { background: none; border: none; padding: 0; flex-direction: column;
+    align-items: stretch; gap: 4px; }
+  #mPop .slider-box label { font-size: .72rem; }
 }
 </style>
 </head>
@@ -1373,6 +1409,10 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
       <div class="banner">🔒 100 % local : vos photos ne quittent jamais votre appareil</div>
     </div>
     <img id="wcLogo" src="logo-wallcolor.png" alt="WallColor Paint">
+    <div class="m-only m-head-actions">
+      <button class="m-ico" id="mDownload" title="Télécharger le résultat">⬇️</button>
+      <button class="m-ico" id="mSettings" title="Réglages">⚙️</button>
+    </div>
   </div>
   <p class="sub">Photographiez ou uploadez votre pièce — l'IA détecte les murs et applique la teinte SATIN DECO choisie, sans toucher aux meubles ni à la décoration.</p>
 </header>
@@ -1422,6 +1462,7 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
       </div>
 
       <button class="btn" id="downloadBtn">⬇️ Télécharger le résultat</button>
+      <button class="tbtn" id="mAffineBtn"><span class="ico">✨</span>Affiner</button>
     </div>
   </aside>
 
@@ -1469,5 +1510,8 @@ footer { margin-top: 30px; color: var(--muted); font-size: .75rem; text-align: c
 </div>
 
 <footer>BLANLUX · SATIN DECO — 100 % local : vos photos ne quittent jamais votre appareil · SegFormer (ADE20K) via Transformers.js</footer>
+
+<!-- Pop-over réglages téléphone : Intensité + Qualité IA y sont déplacés par JS -->
+<div id="mPop"></div>
 </body>
 </html>
